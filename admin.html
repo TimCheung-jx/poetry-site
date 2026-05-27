@@ -98,8 +98,8 @@ body{font-family:-apple-system,'Noto Sans SC',sans-serif;background:var(--cream)
     <div class="github-section" id="githubConfig">
       <h2>GitHub 自动发布</h2>
       <p>配置后，添加诗歌会自动提交到 GitHub 仓库并触发 Pages 部署。需要先在 GitHub 创建一个 repo 并生成 <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a>（勾选 repo 权限）。</p>
-      <input type="text" id="ghOwner" placeholder="GitHub 用户名（如 timcheung）">
-      <input type="text" id="ghRepo" placeholder="仓库名（如 poetry-site）">
+      <input type="text" id="ghOwner" placeholder="GitHub 用户名（如 timcheung）" value="TimCheung-jx">
+      <input type="text" id="ghRepo" placeholder="仓库名（如 poetry-site）" value="TimCheung-jx.github.io">
       <input type="password" id="ghToken" placeholder="Personal Access Token (ghp_...)">
       <div class="form-actions">
         <button class="btn-primary" onclick="saveGithubConfig()">保存配置</button>
@@ -218,23 +218,50 @@ function savePoem(e) {
     poems.unshift(poem);
   }
 
-  saveToServer();
+  await saveToServer();
   resetForm();
   renderPoemList();
   updateCount();
   showToast(editIndex >= 0 ? '诗歌已更新' : '新诗已发布 ✨');
 }
 
-function saveToServer() {
-  // In the full version, this pushes to GitHub via API
-  // For now, save to localStorage as backup
+async function saveToServer() {
   localStorage.setItem('poetry-drafts', JSON.stringify(poems));
+  await pushToGitHub();
+}
+
+async function pushToGitHub() {
+  const owner = localStorage.getItem('gh-owner');
+  const repo = localStorage.getItem('gh-repo');
+  const token = localStorage.getItem('gh-token');
+  if (!owner || !repo || !token) return;
+
+  try {
+    // 1. Get current file SHA
+    const metaRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/poems.json`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!metaRes.ok) throw new Error('Failed to get file info');
+    const meta = await metaRes.json();
+
+    // 2. Update file
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(poems, null, 2))));
+    const updateRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/poems.json`, {
+      method: 'PUT',
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Update poems via admin', content: content, sha: meta.sha })
+    });
+    if (!updateRes.ok) throw new Error('Failed to update file');
+    showToast('已同步到网站 ✨');
+  } catch (e) {
+    showToast('同步失败：' + e.message);
+  }
 }
 
 async function deletePoem(index) {
   if (!confirm(`确定删除「${poems[index].title}」？`)) return;
   poems.splice(index, 1);
-  saveToServer();
+  await saveToServer();
   renderPoemList();
   updateCount();
   showToast('诗歌已删除');
