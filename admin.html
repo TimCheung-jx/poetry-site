@@ -165,11 +165,8 @@ body{font-family:-apple-system,'Noto Sans SC',sans-serif;background:var(--cream)
 const DEFAULT_PASSWORD = 'tim-poetry';
 
 function getStoredPassword() {
-  // Reset any corrupted stored password by checking against default
-  const stored = localStorage.getItem('poetry-admin-pwd');
-  if (stored === null) return DEFAULT_PASSWORD;
-  // If stored password doesn't work, user can clear localStorage to reset
-  return stored;
+  // Always use default password - ignore any stored password
+  return DEFAULT_PASSWORD;
 }
 
 function resetPassword() {
