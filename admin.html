@@ -238,7 +238,7 @@ async function loadPoems() {
   }
 }
 
-function savePoem(e) {
+async function savePoem(e) {
   e.preventDefault();
   const editIndex = parseInt(document.getElementById('editIndex').value);
 
@@ -259,16 +259,16 @@ function savePoem(e) {
     poems.unshift(poem);
   }
 
-  await saveToServer();
+  saveToServer();
   resetForm();
   renderPoemList();
   updateCount();
   showToast(editIndex >= 0 ? '诗歌已更新' : '新诗已发布 ✨');
 }
 
-async function saveToServer() {
+function saveToServer() {
   localStorage.setItem('poetry-drafts', JSON.stringify(poems));
-  await pushToGitHub();
+  pushToGitHub();
 }
 
 async function pushToGitHub() {
@@ -299,10 +299,10 @@ async function pushToGitHub() {
   }
 }
 
-async function deletePoem(index) {
+function deletePoem(index) {
   if (!confirm(`确定删除「${poems[index].title}」？`)) return;
   poems.splice(index, 1);
-  await saveToServer();
+  saveToServer();
   renderPoemList();
   updateCount();
   showToast('诗歌已删除');
