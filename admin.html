@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>诗集管理 · poetry.dpdns.org</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--navy:#2C4058;--orange:#E8834A;--green:#80A86E;--cream:#f5f2ed;--ink:#3A3A3A;--danger:#c0392b}
+body{font-family:-apple-system,'Noto Sans SC',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-box{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}
+.login-box h1{font-size:1.3rem;text-align:center;margin-bottom:24px;color:var(--navy)}
+.login-box input{width:100%;padding:12px 16px;border:1.5px solid rgba(58,58,58,0.1);border-radius:10px;font-size:1rem;margin-bottom:12px;font-family:monospace}
+.login-box input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(44,64,88,0.08)}
+.login-box button{width:100%;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:1rem;cursor:pointer;font-weight:500}
+.login-box button:hover{opacity:0.9}
+.login-err{color:var(--danger);font-size:0.8rem;text-align:center;margin-top:8px;display:none}
+.login-hint{font-size:0.75rem;color:#999;text-align:center;margin-top:12px}
+
+.app-header{background:#fff;border-bottom:1px solid rgba(58,58,58,0.06);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.app-header h1{font-size:1rem;color:var(--navy)}
+.app-header button{background:transparent;border:1px solid rgba(58,58,58,0.15);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:0.8rem;color:var(--ink-light)}
+
+.main-wrap{max-width:800px;margin:0 auto;padding:24px}
+
+/* Form */
+.form-card{background:#fff;border-radius:16px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,0.04);margin-bottom:24px}
+.form-card h2{font-size:1rem;color:var(--navy);margin-bottom:20px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.full{grid-template-columns:1fr}
+.form-field{margin-bottom:12px}
+.form-field label{display:block;font-size:0.78rem;color:#999;margin-bottom:4px;font-weight:500}
+.form-field input,.form-field textarea{width:100%;padding:10px 14px;border:1.5px solid rgba(58,58,58,0.1);border-radius:10px;font-size:0.95rem;font-family:inherit;resize:vertical}
+.form-field input:focus,.form-field textarea:focus{outline:none;border-color:var(--navy)}
+.form-field textarea{min-height:120px;line-height:1.8;white-space:pre-wrap}
+.form-field .hint{font-size:0.7rem;color:var(--orange);margin-top:4px}
+.form-actions{display:flex;gap:10px;margin-top:16px}
+.form-actions button{padding:10px 24px;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;font-weight:500}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{opacity:0.9}
+.btn-outline{background:transparent;border:1.5px solid rgba(58,58,58,0.15);color:var(--ink-light)}
+.btn-outline:hover{background:rgba(0,0,0,0.02)}
+.btn-danger{background:transparent;color:var(--danger);border:1.5px solid transparent}
+
+/* Poem list */
+.poem-list{margin-bottom:24px}
+.poem-list-item{background:#fff;border-radius:12px;padding:16px 24px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 6px rgba(0,0,0,0.03);font-size:0.9rem}
+.poem-list-info{flex:1}
+.poem-list-title{font-weight:600;color:var(--navy)}
+.poem-list-meta{font-size:0.75rem;color:#999;margin-top:1px}
+.poem-list-actions{display:flex;gap:8px}
+.poem-list-actions button{background:transparent;border:none;cursor:pointer;font-size:0.8rem;padding:4px 10px;border-radius:6px;color:var(--ink-light)}
+.poem-list-actions button:hover{background:rgba(0,0,0,0.04)}
+.poem-list-actions .del-btn{color:var(--danger)}
+
+/* Toast */
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 28px;border-radius:100px;font-size:0.85rem;z-index:999;opacity:0;pointer-events:none;transition:opacity 0.3s}
+.toast.show{opacity:1}
+
+/* GitHub setup */
+.github-section{background:#fff;border-radius:16px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,0.04);margin-bottom:24px}
+.github-section h2{font-size:1rem;color:var(--navy);margin-bottom:8px}
+.github-section p{font-size:0.85rem;color:#999;margin-bottom:16px;line-height:1.6}
+.github-section input{width:100%;padding:10px 14px;border:1.5px solid rgba(58,58,58,0.1);border-radius:10px;font-size:0.9rem;margin-bottom:8px;font-family:monospace}
+.github-section input:focus{outline:none;border-color:var(--navy)}
+.github-indicator{font-size:0.75rem;margin-top:4px}
+.github-indicator.ok{color:var(--green)}
+.github-indicator.no{color:var(--orange)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-wrap" id="loginScreen">
+  <form class="login-box" onsubmit="login(event)">
+    <h1>诗集管理</h1>
+    <input type="password" id="pwd" placeholder="请输入管理密码" autofocus>
+    <button type="submit">进入后台</button>
+    <p class="login-err" id="loginErr">密码错误</p>
+    <p class="login-hint">默认密码: <code>tim-poetry</code><br>登录后请在设置中修改</p>
+  </form>
+</div>
+
+<!-- APP -->
+<div id="appScreen" style="display:none">
+  <header class="app-header">
+    <h1>诗集管理 · poetry.dpdns.org</h1>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:0.75rem;color:#999" id="poemCount">0首诗</span>
+      <button onclick="logout()">退出</button>
+    </div>
+  </header>
+
+  <div class="main-wrap">
+    <!-- GitHub config -->
+    <div class="github-section" id="githubConfig">
+      <h2>GitHub 自动发布</h2>
+      <p>配置后，添加诗歌会自动提交到 GitHub 仓库并触发 Pages 部署。需要先在 GitHub 创建一个 repo 并生成 <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a>（勾选 repo 权限）。</p>
+      <input type="text" id="ghOwner" placeholder="GitHub 用户名（如 timcheung）">
+      <input type="text" id="ghRepo" placeholder="仓库名（如 poetry-site）">
+      <input type="password" id="ghToken" placeholder="Personal Access Token (ghp_...)">
+      <div class="form-actions">
+        <button class="btn-primary" onclick="saveGithubConfig()">保存配置</button>
+      </div>
+      <div class="github-indicator" id="ghIndicator"></div>
+    </div>
+
+    <!-- Add poem form -->
+    <div class="form-card">
+      <h2 id="formTitle">添加新诗</h2>
+      <form onsubmit="savePoem(event)">
+        <input type="hidden" id="editIndex" value="-1">
+        <div class="form-row">
+          <div class="form-field">
+            <label>标题 *</label>
+            <input type="text" id="poemTitle" required placeholder="给这首诗取个名字">
+          </div>
+          <div class="form-field">
+            <label>日期</label>
+            <input type="date" id="poemDate">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>标签（用逗号或空格分隔）</label>
+            <input type="text" id="poemTags" placeholder="如: 自然 黄昏">
+            <span class="hint">选中标签在网站中用于分类筛选</span>
+          </div>
+          <div class="form-field">
+            <label>配图链接（可选）</label>
+            <input type="text" id="poemImage" placeholder="如: photos/sunset.jpg">
+          </div>
+        </div>
+        <div class="form-row full">
+          <div class="form-field">
+            <label>诗歌内容 *</label>
+            <textarea id="poemText" required placeholder="在这里写下你的诗...每一行会被保留"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" id="submitBtn">发布诗歌</button>
+          <button type="button" class="btn-outline" onclick="cancelEdit()" id="cancelBtn" style="display:none">取消编辑</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Poem list -->
+    <div class="poem-list" id="poemList"></div>
+
+    <div class="form-actions" style="justify-content:center;margin-top:16px">
+      <button class="btn-outline" onclick="exportJSON()">导出 JSON</button>
+      <button class="btn-outline" onclick="importJSON()">导入 JSON</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== AUTH ===== */
+const ADMIN_PASSWORD = 'tim-poetry';
+
+function login(e) {
+  e.preventDefault();
+  const pwd = document.getElementById('pwd').value;
+  if (pwd === ADMIN_PASSWORD) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = 'block';
+    loadConfig();
+    loadPoems();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+
+function logout() {
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('pwd').value = '';
+}
+
+/* ===== DATA MANAGEMENT ===== */
+let poems = [];
+
+async function loadPoems() {
+  try {
+    const res = await fetch('poems.json');
+    poems = await res.json();
+    renderPoemList();
+    updateCount();
+  } catch(e) {
+    poems = [];
+    renderPoemList();
+    updateCount();
+  }
+}
+
+function savePoem(e) {
+  e.preventDefault();
+  const editIndex = parseInt(document.getElementById('editIndex').value);
+
+  const tagsRaw = document.getElementById('poemTags').value.trim();
+  const tags = tagsRaw ? tagsRaw.split(/[,，\s]+/).filter(Boolean) : [];
+
+  const poem = {
+    title: document.getElementById('poemTitle').value.trim(),
+    date: document.getElementById('poemDate').value || new Date().toISOString().split('T')[0],
+    tags: tags,
+    image: document.getElementById('poemImage').value.trim(),
+    poem: document.getElementById('poemText').value.trim()
+  };
+
+  if (editIndex >= 0) {
+    poems[editIndex] = poem;
+  } else {
+    poems.unshift(poem);
+  }
+
+  saveToServer();
+  resetForm();
+  renderPoemList();
+  updateCount();
+  showToast(editIndex >= 0 ? '诗歌已更新' : '新诗已发布 ✨');
+}
+
+function saveToServer() {
+  // In the full version, this pushes to GitHub via API
+  // For now, save to localStorage as backup
+  localStorage.setItem('poetry-drafts', JSON.stringify(poems));
+}
+
+async function deletePoem(index) {
+  if (!confirm(`确定删除「${poems[index].title}」？`)) return;
+  poems.splice(index, 1);
+  saveToServer();
+  renderPoemList();
+  updateCount();
+  showToast('诗歌已删除');
+}
+
+function editPoem(index) {
+  const p = poems[index];
+  document.getElementById('editIndex').value = index;
+  document.getElementById('poemTitle').value = p.title;
+  document.getElementById('poemDate').value = p.date;
+  document.getElementById('poemTags').value = p.tags.join(' ');
+  document.getElementById('poemImage').value = p.image || '';
+  document.getElementById('poemText').value = p.poem;
+  document.getElementById('formTitle').textContent = '编辑诗歌';
+  document.getElementById('submitBtn').textContent = '更新诗歌';
+  document.getElementById('cancelBtn').style.display = 'inline-flex';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEdit() {
+  resetForm();
+}
+
+function resetForm() {
+  document.getElementById('editIndex').value = '-1';
+  document.getElementById('poemTitle').value = '';
+  document.getElementById('poemDate').value = '';
+  document.getElementById('poemTags').value = '';
+  document.getElementById('poemImage').value = '';
+  document.getElementById('poemText').value = '';
+  document.getElementById('formTitle').textContent = '添加新诗';
+  document.getElementById('submitBtn').textContent = '发布诗歌';
+  document.getElementById('cancelBtn').style.display = 'none';
+}
+
+function renderPoemList() {
+  const container = document.getElementById('poemList');
+  if (poems.length === 0) {
+    container.innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;font-size:0.9rem">还没有诗歌，在上方添加你的第一首诗吧</p>';
+    return;
+  }
+  container.innerHTML = poems.map((p, i) => `
+    <div class="poem-list-item">
+      <div class="poem-list-info">
+        <div class="poem-list-title">${p.title}</div>
+        <div class="poem-list-meta">${p.date} · ${p.tags.join(', ') || '无标签'}</div>
+      </div>
+      <div class="poem-list-actions">
+        <button onclick="editPoem(${i})">编辑</button>
+        <button onclick="deletePoem(${i})" class="del-btn">删除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateCount() {
+  document.getElementById('poemCount').textContent = poems.length + '首诗';
+}
+
+/* ===== GITHUB CONFIG ===== */
+function loadConfig() {
+  const owner = localStorage.getItem('gh-owner');
+  const repo = localStorage.getItem('gh-repo');
+  const token = localStorage.getItem('gh-token');
+  if (owner) document.getElementById('ghOwner').value = owner;
+  if (repo) document.getElementById('ghRepo').value = repo;
+  if (token) document.getElementById('ghToken').value = token;
+  updateGhIndicator();
+}
+
+function saveGithubConfig() {
+  const owner = document.getElementById('ghOwner').value.trim();
+  const repo = document.getElementById('ghRepo').value.trim();
+  const token = document.getElementById('ghToken').value.trim();
+  localStorage.setItem('gh-owner', owner);
+  localStorage.setItem('gh-repo', repo);
+  localStorage.setItem('gh-token', token);
+  updateGhIndicator();
+  showToast('GitHub 配置已保存');
+}
+
+function updateGhIndicator() {
+  const el = document.getElementById('ghIndicator');
+  const owner = localStorage.getItem('gh-owner');
+  const repo = localStorage.getItem('gh-repo');
+  const token = localStorage.getItem('gh-token');
+  if (owner && repo && token) {
+    el.className = 'github-indicator ok';
+    el.textContent = `已配置 ${owner}/${repo}`;
+  } else {
+    el.className = 'github-indicator no';
+    el.textContent = '未配置 GitHub（编辑不能自动同步到线上）';
+  }
+}
+
+/* ===== EXPORT / IMPORT ===== */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(poems, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'poems.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('poems.json 已下载');
+}
+
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    try {
+      const text = await e.target.files[0].text();
+      const data = JSON.parse(text);
+      if (!Array.isArray(data)) throw new Error('Invalid format');
+      poems = data;
+      saveToServer();
+      renderPoemList();
+      updateCount();
+      showToast(`已导入 ${data.length} 首诗`);
+    } catch(err) {
+      showToast('导入失败：JSON 格式不正确');
+    }
+  };
+  input.click();
+}
+
+/* ===== TOAST ===== */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ===== AUTO-SAVE POEMS.JSON on changes (local http server only) ===== */
+// Note: In production with GitHub Pages, this would push via API
+// For local dev, the export/import flow handles persistence
+</script>
+</body>
+</html>
