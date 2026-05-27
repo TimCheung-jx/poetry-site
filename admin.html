@@ -79,7 +79,7 @@ body{font-family:-apple-system,'Noto Sans SC',sans-serif;background:var(--cream)
     <input type="password" id="pwd" placeholder="请输入管理密码" autofocus>
     <button type="submit">进入后台</button>
     <p class="login-err" id="loginErr">密码错误</p>
-    <p class="login-hint">默认密码: <code>tim-poetry</code><br>登录后请在设置中修改</p>
+    <p class="login-hint">请输入管理密码</p>
   </form>
 </div>
 
@@ -89,6 +89,7 @@ body{font-family:-apple-system,'Noto Sans SC',sans-serif;background:var(--cream)
     <h1>诗集管理 · poetry.dpdns.org</h1>
     <div style="display:flex;gap:8px;align-items:center">
       <span style="font-size:0.75rem;color:#999" id="poemCount">0首诗</span>
+      <button onclick="changePassword()">改密码</button>
       <button onclick="logout()">退出</button>
     </div>
   </header>
@@ -160,12 +161,17 @@ body{font-family:-apple-system,'Noto Sans SC',sans-serif;background:var(--cream)
 
 <script>
 /* ===== AUTH ===== */
-const ADMIN_PASSWORD = 'tim-poetry';
+// Default password for first login. Change via "Change Password" in app header.
+const DEFAULT_PASSWORD = 'tim-poetry';
+
+function getStoredPassword() {
+  return localStorage.getItem('poetry-admin-pwd') || DEFAULT_PASSWORD;
+}
 
 function login(e) {
   e.preventDefault();
   const pwd = document.getElementById('pwd').value;
-  if (pwd === ADMIN_PASSWORD) {
+  if (pwd === getStoredPassword()) {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appScreen').style.display = 'block';
     loadConfig();
@@ -179,6 +185,26 @@ function logout() {
   document.getElementById('appScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('pwd').value = '';
+}
+
+function changePassword() {
+  const current = prompt('请输入当前密码：');
+  if (current !== getStoredPassword()) {
+    alert('当前密码错误');
+    return;
+  }
+  const newPwd = prompt('请输入新密码：');
+  if (!newPwd || newPwd.length < 4) {
+    alert('密码至少4位');
+    return;
+  }
+  const confirmPwd = prompt('请再次输入新密码：');
+  if (newPwd !== confirmPwd) {
+    alert('两次输入不一致');
+    return;
+  }
+  localStorage.setItem('poetry-admin-pwd', newPwd);
+  alert('密码已修改，下次登录请使用新密码');
 }
 
 /* ===== DATA MANAGEMENT ===== */
